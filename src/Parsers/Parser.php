@@ -108,18 +108,31 @@ abstract class Parser
 
                     // recursive call if value is not empty
                     if (!empty($value)) {
-                        $this->xmlify($value, $node, $key);
+                        $this->xmlify($value, $node, $key, $encoding, $formatted, $cdataFields);
                     }
                 } else {
                     // add single node.
                     if(in_array($key, $cdataFields)) {
                         //Enclose in CDATA instead of htmlspecialchars
-                        $value = '<![CDATA[' . $value . ']]>';
+                        $add_cdata = function($name, $value, &$parent) {
+                            $child = $parent->addChild($name);
+
+                            if ($child !== NULL) {
+                                $child_node = dom_import_simplexml($child);
+                                $child_owner = $child_node->ownerDocument;
+                                $child_node->appendChild($child_owner->createCDATASection($value));
+                            }
+
+                            return $child;
+                        };
+
+                        $add_cdata($key, $value, $structure);
                     } else {
                         $value = htmlspecialchars(html_entity_decode($value, ENT_QUOTES, 'UTF-8'), ENT_QUOTES, "UTF-8");
+                        $structure->addChild($key, $value);
                     }
 
-                    $structure->addChild($key, $value);
+
                 }
             }
         }
