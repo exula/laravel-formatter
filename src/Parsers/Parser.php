@@ -54,9 +54,10 @@ abstract class Parser
      * @param  null        $structure
      * @param  null|string $basenode
      * @param  null|string $encoding
+     * @param  null|array  $cdataFields
      * @return string
      */
-    private function xmlify($data, $structure = null, $basenode = 'xml', $encoding = 'utf-8', $formatted = false)
+    private function xmlify($data, $structure = null, $basenode = 'xml', $encoding = 'utf-8', $formatted = false, $cdataFields = [])
     {
         // turn off compatibility mode as simple xml throws a wobbly if you don't.
         if (ini_get('zend.ze1_compatibility_mode') == 1) {
@@ -111,7 +112,13 @@ abstract class Parser
                     }
                 } else {
                     // add single node.
-                    $value = htmlspecialchars(html_entity_decode($value, ENT_QUOTES, 'UTF-8'), ENT_QUOTES, "UTF-8");
+                    if(in_array($key, $cdataFields)) {
+                        //Enclose in CDATA instead of htmlspecialchars
+                        $value = '<![CDATA[' . $value . ']]>';
+                    } else {
+                        $value = htmlspecialchars(html_entity_decode($value, ENT_QUOTES, 'UTF-8'), ENT_QUOTES, "UTF-8");
+                    }
+
                     $structure->addChild($key, $value);
                 }
             }
@@ -134,11 +141,12 @@ abstract class Parser
      * @param  string $baseNode
      * @param  string $encoding
      * @param  bool   $formatted
+     * @param  array  $cdataFields
      * @return string An xml string representing the encapsulated data
      */
-    public function toXml($baseNode = 'xml', $encoding = 'utf-8', $formatted = false)
+    public function toXml($baseNode = 'xml', $encoding = 'utf-8', $formatted = false, $cdataFields = [])
     {
-        return $this->xmlify($this->toArray(), null, $baseNode, $encoding, $formatted);
+        return $this->xmlify($this->toArray(), null, $baseNode, $encoding, $formatted, $cdataFields);
     }
 
     private function csvify($data)
